@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ArkRachnid</title>
+<style>
+:root {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --panel-2: #eef0f3;
+  --line: #dcdfe4;
+  --text: #16181d;
+  --muted: #5d6470;
+  --faint: #8a909b;
+  --accent: #0b7fa8;
+  --accent-soft: #dff1f8;
+  --sp: #0b7fa8;  --sp-soft: #dff1f8;
+  --mn: #a86200;  --mn-soft: #fcefd9;
+  --pt: #7a4cc2;  --pt-soft: #efe7fb;
+  --hl: #ffe27a;  --hl-text: #16181d;
+  --row-hit: #fff7d6;
+  --shadow: 0 1px 2px rgb(0 0 0 / .06), 0 2px 8px rgb(0 0 0 / .04);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1114; --panel: #171a1f; --panel-2: #1e2228; --line: #2a2f37;
+    --text: #e7e9ec; --muted: #a2a9b4; --faint: #737b87;
+    --accent: #45b8de; --accent-soft: #15323d;
+    --sp: #45b8de; --sp-soft: #15323d;
+    --mn: #f0a640; --mn-soft: #3a2a12;
+    --pt: #b391f0; --pt-soft: #2d2342;
+    --hl: #d9a90f; --hl-text: #0f1114;
+    --row-hit: #2a2716;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1114; --panel: #171a1f; --panel-2: #1e2228; --line: #2a2f37;
+  --text: #e7e9ec; --muted: #a2a9b4; --faint: #737b87;
+  --accent: #45b8de; --accent-soft: #15323d;
+  --sp: #45b8de; --sp-soft: #15323d;
+  --mn: #f0a640; --mn-soft: #3a2a12;
+  --pt: #b391f0; --pt-soft: #2d2342;
+  --hl: #d9a90f; --hl-text: #0f1114;
+  --row-hit: #2a2716;
+  --shadow: none;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+mark { background: var(--hl); color: var(--hl-text); border-radius: 2px; padding: 0 1px; }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+
+/* header */
+header {
+  background: var(--panel); border-bottom: 1px solid var(--line);
+  padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; flex: none;
+}
+.top { display: flex; align-items: center; gap: 12px; }
+.brand { font-weight: 700; letter-spacing: .02em; font-size: 16px; white-space: nowrap; }
+.brand span { color: var(--accent); }
+.searchwrap { position: relative; flex: 1; max-width: 720px; }
+#q {
+  width: 100%; padding: 9px 12px 9px 34px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-2); outline: none; font-size: 15px;
+}
+#q:focus { border-color: var(--accent); background: var(--panel); }
+.searchwrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+#suggest {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgb(0 0 0 / .18);
+  max-height: 360px; overflow: auto; display: none;
+}
+#suggest.on { display: block; }
+.sg { padding: 6px 12px; display: flex; justify-content: space-between; gap: 12px; cursor: pointer; }
+.sg:hover, .sg.act { background: var(--accent-soft); }
+.sg small { color: var(--faint); white-space: nowrap; }
+.iconbtn { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; color: var(--muted); display: inline-flex; }
+.iconbtn:hover { color: var(--text); border-color: var(--faint); }
+
+.opts { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.chipset { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 3px 10px;
+  font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; user-select: none;
+}
+.chip[aria-pressed="true"] { color: var(--text); border-color: currentColor; }
+.chip.sp[aria-pressed="true"] { color: var(--sp); background: var(--sp-soft); }
+.chip.mn[aria-pressed="true"] { color: var(--mn); background: var(--mn-soft); }
+.chip.pt[aria-pressed="true"] { color: var(--pt); background: var(--pt-soft); }
+.chip.cat[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
+.chip .n { font-variant-numeric: tabular-nums; opacity: .8; }
+.check { display: inline-flex; gap: 5px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+.sep { width: 1px; height: 18px; background: var(--line); }
+select { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 2px 6px; font-size: 13px; }
+
+/* main */
+main { flex: 1; display: flex; min-height: 0; }
+#results { flex: 1 1 46%; overflow: auto; min-width: 0; }
+#reader {
+  flex: 1 1 54%; border-left: 1px solid var(--line); background: var(--panel);
+  display: flex; flex-direction: column; min-width: 0;
+}
+.pad { padding: 16px; }
+.empty { padding: 48px 24px; text-align: center; color: var(--muted); max-width: 560px; margin: 0 auto; }
+.empty h2 { color: var(--text); font-size: 18px; margin: 0 0 8px; }
+.empty code { background: var(--panel-2); padding: 1px 6px; border-radius: 4px; }
+.progress { height: 4px; background: var(--panel-2); border-radius: 2px; overflow: hidden; margin: 14px auto 6px; max-width: 320px; }
+.progress div { height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+
+.summary { padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.summary h2 { margin: 0 0 4px; font-size: 17px; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+.group { border-bottom: 1px solid var(--line); }
+.ghead {
+  position: sticky; top: 0; z-index: 2; background: var(--bg);
+  padding: 8px 16px; display: flex; gap: 8px; align-items: baseline; justify-content: space-between;
+  border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.ghead .gt { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ghead .cat { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); margin-right: 6px; }
+.ghead .gc { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.group.collapsed .stories { display: none; }
+.story { border-top: 1px solid var(--line); background: var(--panel); }
+.story:first-child { border-top: 0; }
+.shead { padding: 8px 16px; display: flex; gap: 10px; align-items: center; cursor: pointer; }
+.shead:hover { background: var(--panel-2); }
+.story.active > .shead { box-shadow: inset 3px 0 0 var(--accent); }
+.code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted); min-width: 52px; }
+.sname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sname .tag { color: var(--faint); font-size: 12px; margin-left: 6px; }
+.badges { display: flex; gap: 4px; flex: none; }
+.b { font-size: 11px; padding: 1px 6px; border-radius: 4px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.b.sp { color: var(--sp); background: var(--sp-soft); }
+.b.mn { color: var(--mn); background: var(--mn-soft); }
+.b.pt { color: var(--pt); background: var(--pt-soft); }
+.hits { padding: 0 16px 10px 78px; display: none; }
+.story.open .hits { display: block; }
+.hit {
+  display: block; width: 100%; text-align: left; background: none; border: 0; border-left: 2px solid var(--line);
+  padding: 4px 10px; color: var(--text); font-size: 13px;
+}
+.hit:hover { background: var(--panel-2); border-left-color: var(--accent); }
+.hit .who { font-weight: 600; margin-right: 6px; }
+.hit .ty { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; margin-right: 6px; font-weight: 700; }
+.ty.sp { color: var(--sp); } .ty.mn { color: var(--mn); } .ty.pt { color: var(--pt); }
+.more { background: none; border: 0; color: var(--accent); padding: 4px 10px; font-size: 13px; }
+
+/* reader */
+.rhead { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.rtitle { font-weight: 650; font-size: 16px; }
+.rsub { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.path { font-family: ui-monospace, Consolas, monospace; font-size: 12px; background: var(--panel-2); padding: 1px 6px; border-radius: 4px; word-break: break-all; }
+.rnav { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 3px 10px; font-size: 13px; }
+.btn:hover { border-color: var(--faint); }
+.btn:disabled { opacity: .45; cursor: default; }
+.rsum { font-size: 13px; color: var(--muted); background: var(--panel-2); border-radius: 6px; padding: 8px 10px; }
+#rbody { flex: 1; overflow: auto; padding: 8px 0 40vh; }
+.row { padding: 3px 16px 3px 16px; display: grid; grid-template-columns: 150px 1fr; gap: 12px; scroll-margin: 30vh; }
+.row.h { background: var(--row-hit); }
+.row.cur { box-shadow: inset 3px 0 0 var(--accent); }
+.row .spk { text-align: right; font-weight: 600; color: var(--muted); overflow-wrap: anywhere; }
+.row.h .spk.m { color: var(--sp); }
+.row.k1 .txt, .row.k2 .txt { font-style: italic; color: var(--muted); }
+.row.k3 .txt::before { content: "▸ "; color: var(--faint); }
+.row.k4 .txt { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+.row.k5 .txt { font-weight: 600; letter-spacing: .02em; }
+.scene { padding: 6px 16px 2px 178px; font-size: 11px; color: var(--faint); }
+.scene .pn { color: var(--muted); }
+.scene .pn.on { color: var(--pt); font-weight: 600; }
+.scene .inf { font-style: italic; }
+#closeReader { display: none; }
+
+@media (max-width: 900px) {
+  #reader { position: fixed; inset: 0; z-index: 30; border: 0; display: none; }
+  #reader.on { display: flex; }
+  #closeReader { display: inline-flex; }
+  .row { grid-template-columns: 1fr; gap: 0; }
+  .row .spk { text-align: left; }
+  .scene { padding-left: 16px; }
+  .hits { padding-left: 16px; }
+  .brand { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="brand">Ark<span>Rachnid</span></div>
+    <div class="searchwrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Character name… (comma-separate aliases, e.g. Kal'tsit, Kaltsit)" disabled>
+      <div id="suggest" role="listbox"></div>
+    </div>
+    <button class="iconbtn" id="theme" title="Toggle theme" aria-label="Toggle theme">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+  <div class="opts">
+    <div class="chipset" id="types">
+      <button class="chip sp" data-t="s" aria-pressed="true" title="Lines this character speaks">Speaker</button>
+      <button class="chip mn" data-t="m" aria-pressed="true" title="Name appears inside text">Mention</button>
+      <button class="chip pt" data-t="p" aria-pressed="true" title="Character sprite is on screen">Portrait</button>
+    </div>
+    <span class="sep"></span>
+    <div class="chipset" id="cats"></div>
+    <span class="sep"></span>
+    <label class="check"><input type="checkbox" id="whole" checked> Whole word</label>
+    <label class="check"><input type="checkbox" id="case"> Match case</label>
+    <label class="check">Sort <select id="sort"><option value="order">Story order</option><option value="hits">Most hits</option></select></label>
+  </div>
+</header>
+<main>
+  <section id="results">
+    <div class="empty" id="loading">
+      <h2>Loading story index…</h2>
+      <div class="progress"><div id="bar"></div></div>
+      <div class="faint" id="loadmsg">meta.json</div>
+    </div>
+  </section>
+  <section id="reader">
+    <div class="empty"><h2>No story open</h2>Pick a result to read the full script, with every hit highlighted.</div>
+  </section>
+</main>
+
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => n.toLocaleString('en-US');
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const CATS = [
+  ['main', 'Main'], ['event', 'Events'], ['mini', 'Mini events'], ['record', 'Records'], ['other', 'Other'],
+];
+const CAT_LABEL = { main: 'Main story', event: 'Event', mini: 'Mini event', record: 'Operator record', other: 'Other' };
+const S = 1, M = 2, P = 4;
+
+const state = {
+  meta: null, lines: null,
+  types: { s: true, m: true, p: true },
+  cats: new Set(CATS.map((c) => c[0])),
+  whole: true, cs: false, sort: 'order',
+  q: '', res: null, open: null, cur: -1, collapsed: new Set(),
+};
+
+// ---------- theme ----------
+try { const t = localStorage.getItem('arkrachnid-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
+$('#theme').onclick = () => {
+  const dark = document.documentElement.dataset.theme
+    ? document.documentElement.dataset.theme === 'dark'
+    : matchMedia('(prefers-color-scheme: dark)').matches;
+  const next = dark ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('arkrachnid-theme', next); } catch {}
+};
+
+// ---------- loading ----------
+async function fetchJson(url, onProgress) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  const total = Number(res.headers.get('X-Raw-Length')) || 0;
+  if (!res.body || !total) return res.json();
+  const reader = res.body.getReader();
+  const chunks = []; let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value); got += value.length;
+    onProgress?.(got, total);
+  }
+  const buf = new Uint8Array(got); let o = 0;
+  for (const c of chunks) { buf.set(c, o); o += c.length; }
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+
+async function load() {
+  const bar = $('#bar'), msg = $('#loadmsg');
+  try {
+    state.meta = await fetchJson('data/meta.json');
+    msg.textContent = 'lines.json';
+    state.lines = await fetchJson('data/lines.json', (g, t) => {
+      bar.style.width = (100 * g / t).toFixed(1) + '%';
+      msg.textContent = `lines.json — ${(g / 1048576).toFixed(1)} / ${(t / 1048576).toFixed(1)} MB`;
+    });
+  } catch (e) {
+    $('#results').innerHTML = `<div class="empty"><h2>Couldn't load the index</h2>
+      <p>${esc(e.message)}</p><p>Build it with <code>node tools/build-index.mjs</code>, then serve with <code>node tools/serve.mjs</code> and open <code>http://localhost:5173/</code>.</p></div>`;
+    return;
+  }
+  prepare();
+  $('#q').disabled = false;
+  readHash();
+  if (state.q) run(); else showIntro();
+  $('#q').focus();
+}
+
+function prepare() {
+  const m = state.meta;
+  // group -> category, story counts per category
+  m.catCount = {};
+  for (const s of m.stories) { const c = m.groups[s.g].cat; m.catCount[c] = (m.catCount[c] || 0) + 1; }
+  // suggestion pool: speakers + named portraits
+  const pool = new Map();
+  for (const [name, n] of m.speakers) pool.set(name.toLowerCase(), { name, n, kind: 'speaker' });
+  for (const [key, name, inf] of m.portraits) {
+    if (!name) continue;
+    const k = name.toLowerCase();
+    if (!pool.has(k)) pool.set(k, { name, n: 0, kind: inf ? 'portrait (inferred)' : 'portrait' });
+  }
+  m.pool = [...pool.values()];
+  renderCats();
+}
+
+function showIntro() {
+  const m = state.meta;
+  $('#results').innerHTML = `<div class="empty"><h2>Find a character across every story</h2>
+    <p>Indexed <b>${fmt(m.stories.length)}</b> stories in <b>${fmt(m.groups.length)}</b> groups,
+    <b>${fmt(m.speakers.length)}</b> distinct speaker names.</p>
+    <p class="faint">Speaker = lines they say. Mention = name inside any text, summary, caption or choice.
+    Portrait = their sprite is on screen (some NPC sprites are matched to a name by inference).</p>
+    <p class="faint">Shortcuts: <code>/</code> focus search · <code>n</code> / <code>p</code> next / previous hit in reader.</p></div>`;
+}
+
+// ---------- filters UI ----------
+function renderCats() {
+  const el = $('#cats');
+  el.innerHTML = CATS.map(([k, label]) =>
+    `<button class="chip cat" data-c="${k}" aria-pressed="${state.cats.has(k)}">${label} <span class="n" data-cn="${k}"></span></button>`).join('');
+  el.onclick = (e) => {
+    const b = e.target.closest('[data-c]'); if (!b) return;
+    const c = b.dataset.c;
+    if (e.shiftKey || e.ctrlKey || e.metaKey) { state.cats = new Set([c]); }
+    else state.cats.has(c) ? state.cats.delete(c) : state.cats.add(c);
+    if (!state.cats.size) state.cats.add(c);
+    for (const x of el.querySelectorAll('[data-c]')) x.setAttribute('aria-pressed', state.cats.has(x.dataset.c));
+    run();
+  };
+}
+$('#types').onclick = (e) => {
+  const b = e.target.closest('[data-t]'); if (!b) return;
+  const t = b.dataset.t;
+  state.types[t] = !state.types[t];
+  if (!state.types.s && !state.types.m && !state.types.p) state.types[t] = true;
+  for (const x of $('#types').children) x.setAttribute('aria-pressed', state.types[x.dataset.t]);
+  run();
+};
+$('#whole').onchange = (e) => { state.whole = e.target.checked; run(); };
+$('#case').onchange = (e) => { state.cs = e.target.checked; run(); };
+$('#sort').onchange = (e) => { state.sort = e.target.value; render(); };
+
+// ---------- search ----------
+function buildRegex(q, flags) {
+  const aliases = q.split(',').map((a) => a.trim()).filter(Boolean);
+  if (!aliases.length) return null;
+  const parts = aliases.map((a) => state.whole ? `(?<![\\p{L}\\p{N}_])${reEsc(a)}(?![\\p{L}\\p{N}_])` : reEsc(a));
+  return new RegExp(parts.join('|'), (state.cs ? '' : 'i') + 'u' + (flags || ''));
+}
+
+function search() {
+  const { meta, lines, types } = state;
+  const re = buildRegex(state.q);
+  if (!re) return null;
+  const pset = new Set();
+  meta.portraits.forEach(([key, name], i) => { if (name ? re.test(name) : re.test(key)) pset.add(i); });
+
+  const out = [];
+  const tot = { stories: 0, s: 0, m: 0, p: 0, ss: 0, sm: 0, sp: 0, byCat: {} };
+  for (let si = 0; si < meta.stories.length; si++) {
+    const st = meta.stories[si];
+    const cat = meta.groups[st.g].cat;
+    const rows = lines[si];
+    const hits = []; let cS = 0, cM = 0, cP = 0;
+    let runStart = -1;
+    for (let ri = 0; ri < rows.length; ri++) {
+      const r = rows[ri];
+      let mask = 0;
+      if (types.s && r[1] && re.test(r[1])) mask |= S;
+      if (types.m && re.test(r[2])) mask |= M;
+      const onScreen = types.p && r[3] && r[3].some((p) => pset.has(p));
+      if (onScreen) { mask |= P; cP++; }
+      if (mask & S) cS++;
+      if (mask & M) cM++;
+      // collapse consecutive portrait-only rows into one hit
+      if (mask === P) {
+        if (runStart >= 0 && hits.length && hits[hits.length - 1].run && hits[hits.length - 1].end === ri - 1) {
+          hits[hits.length - 1].end = ri; continue;
+        }
+        hits.push({ ri, mask, run: true, end: ri }); runStart = ri; continue;
+      }
+      runStart = -1;
+      if (mask) hits.push({ ri, mask });
+    }
+    const sumHit = types.m && st.sum && re.test(st.sum);
+    if (!hits.length && !sumHit) continue;
+    tot.byCat[cat] = (tot.byCat[cat] || 0) + 1;
+    if (!state.cats.has(cat)) continue;
+    out.push({ si, hits, cS, cM, cP, sumHit });
+    tot.stories++; tot.s += cS; tot.m += cM + (sumHit ? 1 : 0); tot.p += cP;
+    if (cS) tot.ss++; if (cM || sumHit) tot.sm++; if (cP) tot.sp++;
+  }
+  const names = [...pset].map((i) => meta.portraits[i]);
+  return { re, out, tot, pnames: names };
+}
+
+let runTimer = 0;
+function run() {
+  clearTimeout(runTimer);
+  runTimer = setTimeout(() => {
+    writeHash();
+    if (!state.q.trim()) { state.res = null; updateCatCounts(); showIntro(); return; }
+    const t = performance.now();
+    state.res = search();
+    state.res && (state.res.ms = performance.now() - t);
+    updateCatCounts();
+    render();
+    if (state.open != null) openStory(state.open, null, true);
+  }, 0);
+}
+
+function updateCatCounts() {
+  for (const el of document.querySelectorAll('[data-cn]')) {
+    const c = el.dataset.cn;
+    el.textContent = state.res ? fmt(state.res.tot.byCat[c] || 0) : fmt(state.meta.catCount[c] || 0);
+  }
+}
+
+// ---------- results rendering ----------
+function groupTitle(g) {
+  if (g.cat === 'record' && g.op) return `${g.op} — ${g.name}`;
+  if (g.cat === 'other' && g.folder) return `${g.name}`;
+  return g.name;
+}
+
+function render() {
+  const el = $('#results');
+  const res = state.res;
+  if (!res) { showIntro(); return; }
+  const { meta } = state;
+  const { tot } = res;
+  if (!res.out.length) {
+    el.innerHTML = `<div class="empty"><h2>No matches for “${esc(state.q)}”</h2>
+      <p>Try turning off <b>Whole word</b>, adding an alias with a comma, or enabling more categories.</p>${suggestHtml()}</div>`;
+    return;
+  }
+  let list = res.out;
+  if (state.sort === 'hits') list = [...list].sort((a, b) => (b.cS + b.cM) - (a.cS + a.cM) || b.cP - a.cP);
+
+  const pn = res.pnames.filter((p) => p[1]);
+  let html = `<div class="summary"><h2>${esc(state.q)}</h2><div class="stats">
+    <span><b>${fmt(tot.stories)}</b> stories</span>
+    ${state.types.s ? `<span><b>${fmt(tot.s)}</b> lines spoken in <b>${fmt(tot.ss)}</b></span>` : ''}
+    ${state.types.m ? `<span><b>${fmt(tot.m)}</b> mentions in <b>${fmt(tot.sm)}</b></span>` : ''}
+    ${state.types.p ? `<span>on screen in <b>${fmt(tot.sp)}</b></span>` : ''}
+    <span class="faint">${res.ms.toFixed(0)} ms</span></div>
+    ${state.types.p && pn.length ? `<div class="faint" style="font-size:12px;margin-top:4px">Portraits matched: ${pn.slice(0, 12).map((p) => esc(p[1]) + (p[2] ? '*' : '') + ` <span class="faint">(${esc(p[0])})</span>`).join(', ')}${pn.length > 12 ? ` +${pn.length - 12} more` : ''}${pn.some((p) => p[2]) ? ' · *inferred' : ''}</div>` : ''}
+    </div>`;
+
+  if (state.sort === 'hits') {
+    html += `<div class="group"><div class="stories">${list.map(storyHtml).join('')}</div></div>`;
+  } else {
+    let curG = -1, buf = [], cnt = 0;
+    const flush = () => {
+      if (curG < 0) return;
+      const g = meta.groups[curG];
+      html += `<div class="group${state.collapsed.has(curG) ? ' collapsed' : ''}" data-g="${curG}">
+        <div class="ghead"><div class="gt"><span class="cat">${CAT_LABEL[g.cat]}</span>${esc(groupTitle(g))}</div>
+        <div class="gc">${cnt} ${cnt === 1 ? 'story' : 'stories'}</div></div>
+        <div class="stories">${buf.join('')}</div></div>`;
+    };
+    for (const r of list) {
+      const g = meta.stories[r.si].g;
+      if (g !== curG) { flush(); curG = g; buf = []; cnt = 0; }
+      buf.push(storyHtml(r)); cnt++;
+    }
+    flush();
+  }
+  el.innerHTML = html;
+  el.scrollTop = 0;
+}
+
+function storyHtml(r) {
+  const st = state.meta.stories[r.si];
+  const g = state.meta.groups[st.g];
+  const label = st.name || st.path.split('/').pop();
+  const sub = state.sort === 'hits' ? `<span class="tag">${esc(groupTitle(g))}</span>` : '';
+  return `<div class="story${state.open === r.si ? ' active' : ''}" data-si="${r.si}">
+    <div class="shead"><span class="code">${esc(st.code || '—')}</span>
+      <span class="sname">${esc(label)}${st.tag ? `<span class="tag">${esc(st.tag)}</span>` : ''}${sub}</span>
+      <span class="badges">${r.cS ? `<span class="b sp" title="Lines spoken">${r.cS}</span>` : ''}${r.cM || r.sumHit ? `<span class="b mn" title="Mentions">${r.cM + (r.sumHit ? 1 : 0)}</span>` : ''}${r.cP ? `<span class="b pt" title="Lines on screen">${r.cP}</span>` : ''}</span>
+    </div><div class="hits"></div></div>`;
+}
+
+const HIT_PAGE = 40;
+function renderHits(storyEl, limit = HIT_PAGE) {
+  const si = +storyEl.dataset.si;
+  const r = state.res.out.find((x) => x.si === si);
+  const rows = state.lines[si];
+  const reG = buildRegex(state.q, 'g');
+  let html = '';
+  if (r.sumHit) html += `<button class="hit" data-ri="-1"><span class="ty mn">summary</span>${snip(state.meta.stories[si].sum, reG)}</button>`;
+  for (const h of r.hits.slice(0, limit)) {
+    const row = rows[h.ri];
+    const ty = h.mask & S ? ['sp', 'speaks'] : h.mask & M ? ['mn', 'mention'] : ['pt', h.end > h.ri ? `on screen ×${h.end - h.ri + 1}` : 'on screen'];
+    const who = row[1] ? `<span class="who">${h.mask & S ? hl(row[1], reG) : esc(row[1])}</span>` : '';
+    html += `<button class="hit" data-ri="${h.ri}"><span class="ty ${ty[0]}">${ty[1]}</span>${who}${snip(row[2], reG)}</button>`;
+  }
+  if (r.hits.length > limit) html += `<button class="more" data-more="${limit + HIT_PAGE * 4}">Show more (${fmt(r.hits.length - limit)} left)</button>`;
+  storyEl.querySelector('.hits').innerHTML = html;
+}
+
+function hl(text, reG) {
+  if (!reG) return esc(text);
+  reG.lastIndex = 0;
+  let out = '', last = 0, m;
+  while ((m = reG.exec(text))) {
+    if (!m[0]) { reG.lastIndex++; continue; }
+    out += esc(text.slice(last, m.index)) + '<mark>' + esc(m[0]) + '</mark>';
+    last = m.index + m[0].length;
+  }
+  return out + esc(text.slice(last));
+}
+
+function snip(text, reG, max = 220) {
+  if (text.length <= max) return hl(text, reG);
+  reG.lastIndex = 0;
+  const m = reG.exec(text);
+  let start = m ? Math.max(0, m.index - 80) : 0;
+  const s = text.slice(start, start + max);
+  return (start ? '…' : '') + hl(s, reG) + (start + max < text.length ? '…' : '');
+}
+
+$('#results').addEventListener('click', (e) => {
+  const gh = e.target.closest('.ghead');
+  if (gh) {
+    const g = gh.parentElement; const gi = +g.dataset.g;
+    g.classList.toggle('collapsed');
+    g.classList.contains('collapsed') ? state.collapsed.add(gi) : state.collapsed.delete(gi);
+    return;
+  }
+  const more = e.target.closest('[data-more]');
+  if (more) { renderHits(more.closest('.story'), +more.dataset.more); return; }
+  const hit = e.target.closest('.hit');
+  if (hit) { openStory(+hit.closest('.story').dataset.si, +hit.dataset.ri); return; }
+  const sh = e.target.closest('.shead');
+  if (sh) {
+    const st = sh.parentElement;
+    const opening = !st.classList.contains('open');
+    st.classList.toggle('open', opening);
+    if (opening) renderHits(st);
+    if (!matchMedia('(max-width: 900px)').matches) openStory(+st.dataset.si, null);
+  }
+});
+
+// ---------- reader ----------
+function openStory(si, ri, keepScroll) {
+  const { meta, lines } = state;
+  const st = meta.stories[si];
+  const g = meta.groups[st.g];
+  const rows = lines[si];
+  const res = state.res && state.res.out.find((x) => x.si === si);
+  const reG = state.res ? buildRegex(state.q, 'g') : null;
+  const re = state.res ? state.res.re : null;
+  const pset = new Set();
+  if (re && state.types.p) meta.portraits.forEach(([key, name], i) => { if (name ? re.test(name) : re.test(key)) pset.add(i); });
+  const masks = new Map();
+  if (res) for (const h of res.hits) for (let i = h.ri; i <= (h.end ?? h.ri); i++) masks.set(i, h.mask);
+  const navHits = res ? res.hits.map((h) => h.ri) : [];
+
+  const prevBody = $('#rbody');
+  const scroll = keepScroll && state.open === si && prevBody ? prevBody.scrollTop : null;
+  state.open = si;
+  state.nav = navHits;
+  document.querySelectorAll('.story.active').forEach((x) => x.classList.remove('active'));
+  document.querySelector(`.story[data-si="${si}"]`)?.classList.add('active');
+
+  let body = '', prevScene = '';
+  for (let i = 0; i < rows.length; i++) {
+    const [k, spk, txt, por] = rows[i];
+    const scene = (por || []).join(',');
+    if (scene !== prevScene && por && por.length) {
+      body += `<div class="scene">on screen: ${por.map((p) => {
+        const [key, name, inf] = meta.portraits[p];
+        return `<span class="pn${pset.has(p) ? ' on' : ''}${inf ? ' inf' : ''}" title="${esc(key)}${inf ? ' (name inferred)' : ''}">${esc(name || key)}</span>`;
+      }).join(', ')}</div>`;
+    }
+    prevScene = scene;
+    const mask = masks.get(i) || 0;
+    const isHit = mask & (S | M);
+    body += `<div class="row k${k}${isHit ? ' h' : ''}" id="r${i}"><div class="spk${mask & S ? ' m' : ''}">${mask & S ? hl(spk, reG) : esc(spk)}</div><div class="txt">${mask & M ? hl(txt, reG) : esc(txt)}</div></div>`;
+  }
+
+  const title = st.name || st.path.split('/').pop();
+  $('#reader').innerHTML = `
+    <div class="rhead">
+      <div class="rnav">
+        <button class="btn" id="closeReader">← Back</button>
+        <button class="btn" id="prevStory" title="Previous story with hits">⟨ story</button>
+        <button class="btn" id="prevHit" title="Previous hit (p)">↑ hit</button>
+        <span class="muted" id="hitpos" style="font-size:12px">${navHits.length ? `${navHits.length} hits` : 'no hits'}</span>
+        <button class="btn" id="nextHit" title="Next hit (n)">↓ hit</button>
+        <button class="btn" id="nextStory" title="Next story with hits">story ⟩</button>
+      </div>
+      <div class="rtitle">${st.code ? `<span class="code">${esc(st.code)}</span> ` : ''}${esc(title)}${st.tag ? ` <span class="faint" style="font-size:13px;font-weight:400">· ${esc(st.tag)}</span>` : ''}</div>
+      <div class="rsub"><span>${CAT_LABEL[g.cat]} · ${esc(groupTitle(g))}</span>
+        <span class="path" title="Path under ArknightsGamedata/${esc(meta.lang)}/gamedata/story/">story/${esc(st.path)}</span>
+        <button class="btn" id="copyPath" style="padding:0 8px;font-size:12px">Copy path</button>
+        <span>${fmt(rows.length)} lines</span></div>
+      ${st.sum ? `<div class="rsum">${res && res.sumHit ? hl(st.sum, reG) : esc(st.sum)}</div>` : ''}
+    </div>
+    <div id="rbody">${body}</div>`;
+  $('#reader').classList.add('on');
+
+  $('#closeReader').onclick = () => $('#reader').classList.remove('on');
+  $('#copyPath').onclick = (e) => {
+    const p = `ArknightsGamedata/${meta.lang}/gamedata/story/${st.path}`;
+    navigator.clipboard?.writeText(p).then(() => { e.target.textContent = 'Copied'; setTimeout(() => (e.target.textContent = 'Copy path'), 1200); });
+  };
+  $('#prevHit').onclick = () => stepHit(-1);
+  $('#nextHit').onclick = () => stepHit(1);
+  const idx = state.res ? state.res.out.findIndex((x) => x.si === si) : -1;
+  $('#prevStory').disabled = idx <= 0;
+  $('#nextStory').disabled = idx < 0 || idx >= state.res.out.length - 1;
+  $('#prevStory').onclick = () => openStory(state.res.out[idx - 1].si, state.res.out[idx - 1].hits[0]?.ri ?? null);
+  $('#nextStory').onclick = () => openStory(state.res.out[idx + 1].si, state.res.out[idx + 1].hits[0]?.ri ?? null);
+
+  state.cur = -1;
+  if (scroll != null) $('#rbody').scrollTop = scroll;
+  else if (ri != null && ri >= 0) jumpTo(ri);
+  else if (ri == null && navHits.length) jumpTo(navHits[0]);
+  writeHash();
+}
+
+function jumpTo(ri) {
+  document.querySelectorAll('.row.cur').forEach((x) => x.classList.remove('cur'));
+  const el = document.getElementById('r' + ri);
+  if (!el) return;
+  el.classList.add('cur');
+  el.scrollIntoView({ block: 'center' });
+  state.cur = state.nav.indexOf(ri);
+  const pos = $('#hitpos');
+  if (pos && state.cur >= 0) pos.textContent = `hit ${state.cur + 1} / ${state.nav.length}`;
+}
+
+function stepHit(d) {
+  if (!state.nav || !state.nav.length) return;
+  let i = state.cur + d;
+  if (state.cur < 0) i = d > 0 ? 0 : state.nav.length - 1;
+  i = (i + state.nav.length) % state.nav.length;
+  jumpTo(state.nav[i]);
+}
+
+// ---------- suggestions ----------
+const qEl = $('#q'), sgEl = $('#suggest');
+let sgItems = [], sgAct = -1;
+function suggestHtml() {
+  const near = matchPool(state.q.split(',').pop().trim(), 6, true);
+  if (!near.length) return '';
+  return `<p class="faint">Similar names: ${near.map((x) => `<a href="#q=${encodeURIComponent(x.name)}">${esc(x.name)}</a>`).join(', ')}</p>`;
+}
+function matchPool(term, limit = 12, loose = false) {
+  const t = term.toLowerCase();
+  if (t.length < (loose ? 3 : 1)) return [];
+  const pre = [], sub = [];
+  for (const x of state.meta.pool) {
+    const n = x.name.toLowerCase();
+    if (n.startsWith(t)) pre.push(x);
+    else if (n.includes(t) || (loose && t.length > 3 && n.includes(t.slice(0, -1)))) sub.push(x);
+  }
+  const by = (a, b) => b.n - a.n;
+  return [...pre.sort(by), ...sub.sort(by)].slice(0, limit);
+}
+function showSuggest() {
+  const term = qEl.value.split(',').pop().trim();
+  sgItems = term ? matchPool(term) : [];
+  sgAct = -1;
+  if (!sgItems.length || (sgItems.length === 1 && sgItems[0].name === term)) { sgEl.classList.remove('on'); return; }
+  sgEl.innerHTML = sgItems.map((x, i) => `<div class="sg" data-i="${i}"><span>${esc(x.name)}</span><small>${x.n ? fmt(x.n) + ' lines' : x.kind}</small></div>`).join('');
+  sgEl.classList.add('on');
+}
+function pickSuggest(i) {
+  const parts = qEl.value.split(',');
+  parts[parts.length - 1] = (parts.length > 1 ? ' ' : '') + sgItems[i].name;
+  qEl.value = parts.join(',');
+  sgEl.classList.remove('on');
+  state.q = qEl.value; run();
+}
+qEl.addEventListener('input', () => {
+  showSuggest();
+  clearTimeout(qEl._t);
+  qEl._t = setTimeout(() => { state.q = qEl.value; run(); }, 350);
+});
+qEl.addEventListener('keydown', (e) => {
+  if (sgEl.classList.contains('on') && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+    e.preventDefault();
+    sgAct = (sgAct + (e.key === 'ArrowDown' ? 1 : -1) + sgItems.length) % sgItems.length;
+    sgEl.querySelectorAll('.sg').forEach((x, i) => x.classList.toggle('act', i === sgAct));
+    sgEl.children[sgAct]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    if (sgEl.classList.contains('on') && sgAct >= 0) { e.preventDefault(); pickSuggest(sgAct); }
+    else { clearTimeout(qEl._t); sgEl.classList.remove('on'); state.q = qEl.value; run(); }
+  } else if (e.key === 'Escape') sgEl.classList.remove('on');
+});
+qEl.addEventListener('blur', () => setTimeout(() => sgEl.classList.remove('on'), 150));
+sgEl.addEventListener('mousedown', (e) => { const x = e.target.closest('.sg'); if (x) { e.preventDefault(); pickSuggest(+x.dataset.i); } });
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.matches('input, select, textarea')) return;
+  if (e.key === '/') { e.preventDefault(); qEl.focus(); qEl.select(); }
+  else if (e.key === 'n') stepHit(1);
+  else if (e.key === 'p') stepHit(-1);
+  else if (e.key === 'Escape') $('#reader').classList.remove('on');
+});
+
+// ---------- URL hash ----------
+function writeHash() {
+  const p = new URLSearchParams();
+  if (state.q) p.set('q', state.q);
+  const t = ['s', 'm', 'p'].filter((k) => state.types[k]).join('');
+  if (t !== 'smp') p.set('t', t);
+  if (state.cats.size !== CATS.length) p.set('cat', [...state.cats].join(','));
+  if (!state.whole) p.set('w', '0');
+  if (state.cs) p.set('c', '1');
+  if (state.open != null && state.meta) p.set('s', state.meta.stories[state.open].path);
+  const h = '#' + p.toString();
+  if (location.hash !== h) history.replaceState(null, '', h);
+}
+function readHash() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  state.q = p.get('q') || '';
+  qEl.value = state.q;
+  const t = p.get('t') || 'smp';
+  for (const k of ['s', 'm', 'p']) state.types[k] = t.includes(k);
+  for (const x of $('#types').children) x.setAttribute('aria-pressed', state.types[x.dataset.t]);
+  const cat = p.get('cat');
+  state.cats = new Set(cat ? cat.split(',') : CATS.map((c) => c[0]));
+  for (const x of document.querySelectorAll('[data-c]')) x.setAttribute('aria-pressed', state.cats.has(x.dataset.c));
+  state.whole = p.get('w') !== '0'; $('#whole').checked = state.whole;
+  state.cs = p.get('c') === '1'; $('#case').checked = state.cs;
+  const s = p.get('s');
+  if (s) { const i = state.meta.stories.findIndex((x) => x.path === s); if (i >= 0) state.open = i; }
+}
+window.addEventListener('hashchange', () => {
+  if (!state.meta) return;
+  const before = state.q;
+  readHash();
+  if (state.q !== before) { state.open = null; run(); }
+});
+
+load();
+</script>
+</body>
+</html>

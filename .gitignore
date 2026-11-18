@@ -1,0 +1,17 @@
+# Game data (provided separately)
+ArknightsGamedata/
+
+# Generated index: rebuild with `node tools/build-index.mjs`
+data/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
